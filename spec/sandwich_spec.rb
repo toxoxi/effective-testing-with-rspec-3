@@ -1,10 +1,7 @@
 Sandwich = Struct.new(:taste, :toppings)
 
 RSpec.describe 'An ideal sandwich' do
-  def sandwich
-    # Looks good, but if @sandwich is "falsey" -- everytime createing a new sandwich
-    @sandwich ||= Sandwich.new('delicious', [])
-  end
+  let(:sandwich) { Sandwich.new('delicious', []) }
 
   it 'is delicious' do
     taste = sandwich.taste
