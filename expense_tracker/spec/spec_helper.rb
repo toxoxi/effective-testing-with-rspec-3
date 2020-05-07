@@ -13,6 +13,12 @@
 # it.
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
+
+# Setting the RACK_ENV environment variable to test switches on test-friendly behavior in your web framework.
+# Sinatra normally swallows exceptions and renders a “500 Internal Server Error” response.
+# With this variable set, Sinatra will instead allow errors to bubble up to your test framework.
+ENV['RACK_ENV'] = 'test'
+
 RSpec.configure do |config|
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest
