@@ -3,11 +3,15 @@ require_relative '../config/sequel'
 module ExpenseTracker
   RecordResult = Struct.new(:success?, :expense_id, :error_message)
 
+  RECORD_KEYS = ['payee', 'amount', 'date']
+
   class Ledger
     def record(expense)
-      unless expense.key?('payee')
-        message = 'Invalid expense: `payee` is required'
-        return RecordResult.new(false, nil, message)
+      RECORD_KEYS.each do |key|
+        unless expense.key?(key)
+          message = "Invalid expense: `#{key}` is required"
+          return RecordResult.new(false, nil, message)
+        end
       end
 
       DB[:expenses].insert(expense)

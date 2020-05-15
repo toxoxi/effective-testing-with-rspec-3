@@ -1,4 +1,5 @@
 require_relative '../../../app/ledger'
+require_relative '../../../config/sequel'
 
 module ExpenseTracker
   RSpec.describe Ledger, :aggregate_failures, :db do
@@ -26,17 +27,34 @@ module ExpenseTracker
         end
       end
 
-      context 'when the expense lacks a payee' do
-        it 'rejects the expense as invalid' do
-          expense.delete('payee')
+      context 'when the expense lacks something' do
+        let(:result) { ledger.record(expense) }
 
-          result = ledger.record(expense)
+        shared_examples 'check the lack' do
+          it 'rejects the expense as invalid' do
+            expense.delete(lacked_key)
+            
+            expect(result).not_to be_success
+            expect(result.expense_id).to eq(nil)
+            expect(result.error_message).to include("`#{lacked_key}` is required")
+            
+            expect(DB[:expenses].count).to eq(0)
+          end
+        end
 
-          expect(result).not_to be_success
-          expect(result.expense_id).to eq(nil)
-          expect(result.error_message).to include('`payee` is required')
+        context 'lacks a payee' do
+          let(:lacked_key) { 'payee' }
+          it_behaves_like 'check the lack'
+        end
 
-          expect(DB[:expenses].count).to eq(0)
+        context 'lacks a amount' do
+          let(:lacked_key) { 'amount' }
+          it_behaves_like 'check the lack'
+        end
+
+        context 'lacks a date' do
+          let(:lacked_key) { 'date' }
+          it_behaves_like 'check the lack'
         end
       end
     end
