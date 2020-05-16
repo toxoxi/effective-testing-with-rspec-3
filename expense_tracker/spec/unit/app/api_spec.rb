@@ -11,7 +11,6 @@ module ExpenseTracker
     end
 
     let(:ledger) { instance_double('ExpenseTracker::Ledger') }
-    let(:parsed) { JSON.parse(last_response.body) }
 
     describe 'POST /expenses' do
 
@@ -28,7 +27,8 @@ module ExpenseTracker
           it 'returns the expense id' do
             post '/expenses', JSON.generate(expense)
 
-            expect(parsed).to include('expense_id' => 417)
+            response_body = JSON.parse(last_response.body)
+            expect(response_body).to include('expense_id' => 417)
           end
           
           it 'responds with a 200 (OK)' do
@@ -45,11 +45,14 @@ module ExpenseTracker
 
           it 'returns the expense id' do
             post '/expenses', Ox.dump(expense)
-            expect(parsed).to include('expense_id' => 417)
+
+            response_body = Ox.parse_obj(last_response.body)
+            expect(response_body).to include('expense_id' => 417)
           end
           
           it 'responds with a 200 (OK)' do
             post '/expenses', Ox.dump(expense)
+
             expect(last_response.status).to eq(200)
           end
         end
@@ -68,7 +71,8 @@ module ExpenseTracker
           it 'returns an error message' do
             post '/expenses', JSON.generate(expense)
 
-            expect(parsed).to include('error' => 'Expense incomplete')
+            response_body = JSON.parse(last_response.body)
+            expect(response_body).to include('error' => 'Expense incomplete')
           end
           
           it 'responds with a 422 (Unprocessable entity)' do
@@ -86,7 +90,8 @@ module ExpenseTracker
           it 'returns an error message' do
             post '/expenses', Ox.dump(expense)
 
-            expect(parsed).to include('error' => 'Expense incomplete')
+            response_body = Ox.parse_obj(last_response.body)
+            expect(response_body).to include('error' => 'Expense incomplete')
           end
           
           it 'responds with a 422 (Unprocessable entity)' do
@@ -114,14 +119,30 @@ module ExpenseTracker
             .and_return(records)
         end
 
-        it 'returns the expense records as JSON' do
-          get '/expenses/2017-06-12'
-          expect(parsed).to eq(records.map(&:to_s))
+        shared_examples 'return records' do
+          it 'returns the expense records' do
+            get '/expenses/2017-06-12'
+            expect(last_response.body).to eq(expected_records)
+          end
+          
+          it 'responds with a 200 (OK)' do
+            get '/expenses/2017-06-12'
+            expect(last_response.status).to eq(200)
+          end
+        end
+        
+        context 'JSON format' do
+          let(:expected_records) { JSON.generate(records) }
+          it_behaves_like 'return records'
         end
 
-        it 'responds with a 200 (OK)' do
-          get '/expenses/2017-06-12'
-          expect(last_response.status).to eq(200)
+        context 'XML format' do
+          before do
+            header 'Accept', 'text/xml'
+          end
+
+          let(:expected_records) { Ox.dump(records) }
+          it_behaves_like 'return records'
         end
       end
 
@@ -134,14 +155,30 @@ module ExpenseTracker
             .and_return(records)
         end
 
-        it 'returns an empty array as JSON' do
-          get '/expenses/2017-06-12'
-          expect(parsed).to eq(records)
+        shared_examples 'return empty array' do          
+          it 'returns an empty array' do
+            get '/expenses/2017-06-12'
+            expect(last_response.body).to eq(expected_records)
+          end
+          
+          it 'responds with a 200 (OK)' do
+            get '/expenses/2017-06-12'
+            expect(last_response.status).to eq(200)
+          end
         end
 
-        it 'responds with a 200 (OK)' do
-          get '/expenses/2017-06-12'
-          expect(last_response.status).to eq(200)
+        context 'JSON format' do
+          let(:expected_records) { JSON.generate(records) }
+          it_behaves_like 'return empty array'
+        end
+        
+        context 'XML format' do
+          before do
+            header 'Accept', 'text/xml'
+          end
+
+          let(:expected_records) { Ox.dump(records) }
+          it_behaves_like 'return empty array'
         end
       end
     end
