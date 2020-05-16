@@ -1,5 +1,6 @@
 require 'sinatra/base'
 require 'json'
+require 'ox'
 require_relative 'ledger'
 
 module ExpenseTracker
@@ -16,7 +17,7 @@ module ExpenseTracker
     end
 
     post '/expenses' do
-      expense = JSON.parse(request.body.read)
+      expense = parse_body(request)
       result = @ledger.record(expense)
 
       if result.success?
@@ -24,6 +25,21 @@ module ExpenseTracker
       else
         status 422
         JSON.generate('error' => result.error_message)
+      end
+    end
+
+    private
+
+    def parse_body(request)
+      body = request.body.read
+
+      if request.media_type == 'application/json'
+        JSON.parse(body)
+      elsif request.media_type == 'text/xml'
+        Ox.parse_obj(body)
+      else
+        # OR raise error
+        JSON.parse(body)
       end
     end
   end
