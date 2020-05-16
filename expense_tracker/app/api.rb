@@ -11,20 +11,22 @@ module ExpenseTracker
     end
 
     get '/expenses/:date' do
+      @request_type = request.accept.first.to_s
       date = params[:date]
       results = @ledger.expenses_on(date)
-      JSON.generate(results)
+      generate_result(results).tap{|r| p r }
     end
 
     post '/expenses' do
+      @request_type = request.media_type
       expense = parse_body(request)
       result = @ledger.record(expense)
 
       if result.success?
-        JSON.generate('expense_id' => result.expense_id)
+        generate_result('expense_id' => result.expense_id)
       else
         status 422
-        JSON.generate('error' => result.error_message)
+        generate_result('error' => result.error_message)
       end
     end
 
@@ -33,13 +35,24 @@ module ExpenseTracker
     def parse_body(request)
       body = request.body.read
 
-      if request.media_type == 'application/json'
+      if @request_type == 'application/json'
         JSON.parse(body)
-      elsif request.media_type == 'text/xml'
+      elsif @request_type == 'text/xml'
         Ox.parse_obj(body)
       else
         # OR raise error
         JSON.parse(body)
+      end
+    end
+
+    def generate_result(data)
+      if @request_type == 'application/json'
+        JSON.generate(data)
+      elsif @request_type == 'text/xml'
+        Ox.dump(data)
+      else
+        # OR raise error
+        JSON.generate(data)
       end
     end
   end
