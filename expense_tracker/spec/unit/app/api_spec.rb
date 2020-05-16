@@ -1,5 +1,6 @@
 require_relative '../../../app/api'
 require 'rack/test'
+require 'ox'
 
 module ExpenseTracker
   RSpec.describe API do
@@ -23,15 +24,34 @@ module ExpenseTracker
             .and_return(RecordResult.new(true, 417, nil))
         end
 
-        it 'returns the expense id' do
-          post '/expenses', JSON.generate(expense)
+        context 'JSON format' do
+          it 'returns the expense id' do
+            post '/expenses', JSON.generate(expense)
 
-          expect(parsed).to include('expense_id' => 417)
+            expect(parsed).to include('expense_id' => 417)
+          end
+          
+          it 'responds with a 200 (OK)' do
+            post '/expenses', JSON.generate(expense)
+
+            expect(last_response.status).to eq(200)
+          end
         end
 
-        it 'responds with a 200 (OK)' do
-          post '/expenses', JSON.generate(expense)
-          expect(last_response.status).to eq(200)
+        context 'XML format' do
+          before do
+            header 'Content-Type', 'text/xml'
+          end
+
+          it 'returns the expense id' do
+            post '/expenses', Ox.dump(expense)
+            expect(parsed).to include('expense_id' => 417)
+          end
+          
+          it 'responds with a 200 (OK)' do
+            post '/expenses', Ox.dump(expense)
+            expect(last_response.status).to eq(200)
+          end
         end
       end
 
@@ -44,15 +64,36 @@ module ExpenseTracker
             .and_return(RecordResult.new(false, 417, 'Expense incomplete'))
         end
 
-        it 'returns an error message' do
-          post '/expenses', JSON.generate(expense)
+        context 'JSON format' do
+          it 'returns an error message' do
+            post '/expenses', JSON.generate(expense)
 
-          expect(parsed).to include('error' => 'Expense incomplete')
+            expect(parsed).to include('error' => 'Expense incomplete')
+          end
+          
+          it 'responds with a 422 (Unprocessable entity)' do
+            post '/expenses', JSON.generate(expense)
+
+            expect(last_response.status).to eq(422)
+          end
         end
-        
-        it 'responds with a 422 (Unprocessable entity)' do
-          post '/expenses', JSON.generate(expense)
-          expect(last_response.status).to eq(422)
+
+        context 'XML format' do
+          before do
+            header 'Content-Type', 'text/xml'
+          end
+
+          it 'returns an error message' do
+            post '/expenses', Ox.dump(expense)
+
+            expect(parsed).to include('error' => 'Expense incomplete')
+          end
+          
+          it 'responds with a 422 (Unprocessable entity)' do
+            post '/expenses', Ox.dump(expense)
+
+            expect(last_response.status).to eq(422)
+          end
         end
       end
     end
